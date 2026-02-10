@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  SOLANA_VERSION: "3.0.15"
+  ANCHOR_VERSION: "0.32.1"
+  NODE_VERSION: "20"
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "yarn"
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Solana CLI
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/v${{ env.SOLANA_VERSION }}/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+
+      - name: Install Anchor CLI
+        run: |
+          cargo install --git https://github.com/coral-xyz/anchor avm --force
+          avm install ${{ env.ANCHOR_VERSION }}
+          avm use ${{ env.ANCHOR_VERSION }}
+
+      - name: Setup Solana keypair
+        run: solana-keygen new --no-bip39-passphrase --force
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build program
+        run: anchor build
+
+      - name: Run tests
+        run: anchor test
+
+      - name: Lint TypeScript
+        run: yarn lint
+        continue-on-error: true
+
+  lint-rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Check formatting
+        run: cargo fmt --check --manifest-path programs/saea/Cargo.toml
+        continue-on-error: true
+
+      - name: Run clippy
+        run: cargo clippy --manifest-path programs/saea/Cargo.toml -- -D warnings
+        continue-on-error: true
