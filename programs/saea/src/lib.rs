@@ -1,9 +1,9 @@
 use anchor_lang::prelude::*;
 
-pub mod state;
-pub mod instructions;
 pub mod errors;
 pub mod events;
+pub mod instructions;
+pub mod state;
 
 use instructions::*;
 
@@ -19,14 +19,23 @@ pub mod saea {
         min_fitness_threshold: u64,
         mutation_rate_bps: u16,
     ) -> Result<()> {
-        instructions::initialize_arena::handle_initialize_arena(ctx, max_agents, min_fitness_threshold, mutation_rate_bps)
+        instructions::initialize_arena::handle_initialize_arena(
+            ctx,
+            max_agents,
+            min_fitness_threshold,
+            mutation_rate_bps,
+        )
     }
 
     pub fn register_agent(ctx: Context<RegisterAgent>, genome: Vec<u8>) -> Result<()> {
         instructions::register_agent::handle_register_agent(ctx, genome)
     }
 
-    pub fn submit_genome(ctx: Context<SubmitGenome>, new_genome: Vec<u8>, parent_key: Pubkey) -> Result<()> {
+    pub fn submit_genome(
+        ctx: Context<SubmitGenome>,
+        new_genome: Vec<u8>,
+        parent_key: Pubkey,
+    ) -> Result<()> {
         instructions::submit_genome::handle_submit_genome(ctx, new_genome, parent_key)
     }
 

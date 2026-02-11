@@ -1,7 +1,7 @@
-use anchor_lang::prelude::*;
-use crate::state::Arena;
 use crate::errors::SaeaError;
 use crate::events::ArenaInitialized;
+use crate::state::Arena;
+use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
 pub struct InitializeArena<'info> {
@@ -46,6 +46,10 @@ pub fn handle_initialize_arena(
         mutation_rate_bps,
     });
 
-    msg!("Arena initialized: max_agents={}, mutation_rate_bps={}", max_agents, mutation_rate_bps);
+    msg!(
+        "Arena initialized: max_agents={}, mutation_rate_bps={}",
+        max_agents,
+        mutation_rate_bps
+    );
     Ok(())
 }

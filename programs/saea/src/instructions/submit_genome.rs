@@ -1,8 +1,8 @@
-use anchor_lang::prelude::*;
-use solana_sha256_hasher::hash;
-use crate::state::{Arena, AgentAccount, MAX_GENOME_LEN};
 use crate::errors::SaeaError;
 use crate::events::GenomeSubmitted;
+use crate::state::{AgentAccount, Arena, MAX_GENOME_LEN};
+use anchor_lang::prelude::*;
+use solana_sha256_hasher::hash;
 
 #[derive(Accounts)]
 pub struct SubmitGenome<'info> {
@@ -21,7 +21,11 @@ pub struct SubmitGenome<'info> {
     pub owner: Signer<'info>,
 }
 
-pub fn handle_submit_genome(ctx: Context<SubmitGenome>, new_genome: Vec<u8>, parent_key: Pubkey) -> Result<()> {
+pub fn handle_submit_genome(
+    ctx: Context<SubmitGenome>,
+    new_genome: Vec<u8>,
+    parent_key: Pubkey,
+) -> Result<()> {
     require!(
         !new_genome.is_empty() && new_genome.len() <= MAX_GENOME_LEN,
         SaeaError::InvalidGenomeLength
@@ -36,7 +40,10 @@ pub fn handle_submit_genome(ctx: Context<SubmitGenome>, new_genome: Vec<u8>, par
     agent.parent_genome_hash = old_genome_hash;
     agent.parent = parent_key;
     agent.genome = new_genome;
-    agent.mutation_count = agent.mutation_count.checked_add(1).ok_or(SaeaError::ArithmeticOverflow)?;
+    agent.mutation_count = agent
+        .mutation_count
+        .checked_add(1)
+        .ok_or(SaeaError::ArithmeticOverflow)?;
     agent.generation = ctx.accounts.arena.current_generation;
 
     emit!(GenomeSubmitted {
@@ -47,6 +54,10 @@ pub fn handle_submit_genome(ctx: Context<SubmitGenome>, new_genome: Vec<u8>, par
         parent: agent.parent,
     });
 
-    msg!("Genome submitted: mutation_count={}, gen={}", agent.mutation_count, agent.generation);
+    msg!(
+        "Genome submitted: mutation_count={}, gen={}",
+        agent.mutation_count,
+        agent.generation
+    );
     Ok(())
 }

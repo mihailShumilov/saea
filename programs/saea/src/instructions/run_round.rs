@@ -1,8 +1,8 @@
-use anchor_lang::prelude::*;
-use solana_sha256_hasher::hashv;
-use crate::state::{Arena, AgentAccount, Round};
 use crate::errors::SaeaError;
 use crate::events::{AgentScored, RoundCompleted};
+use crate::state::{AgentAccount, Arena, Round};
+use anchor_lang::prelude::*;
+use solana_sha256_hasher::hashv;
 
 #[derive(Accounts)]
 pub struct RunRound<'info> {
@@ -53,24 +53,26 @@ pub fn compute_fitness(genome: &[u8], round_seed: &[u8; 32]) -> u64 {
     for (i, &gene) in genome.iter().enumerate() {
         let target_hash = hashv(&[round_seed.as_ref(), &[i as u8]]);
         let target = target_hash.to_bytes()[0];
-        let diff = if gene > target { gene - target } else { target - gene };
+        let diff = gene.abs_diff(target);
         proximity_score += (255 - diff as u64) as u64;
     }
 
     // Component 2: Diversity bonus
     let mean = genome.iter().map(|&g| g as u64).sum::<u64>() / genome_len;
-    let variance: u64 = genome.iter()
+    let variance: u64 = genome
+        .iter()
         .map(|&g| {
-            let diff = if (g as u64) > mean { g as u64 - mean } else { mean - g as u64 };
+            let diff = (g as u64).abs_diff(mean);
             diff * diff
         })
-        .sum::<u64>() / genome_len;
+        .sum::<u64>()
+        / genome_len;
     let diversity_bonus = std::cmp::min(variance / 10, 500);
 
     // Component 3: Balance bonus
     let total: u64 = genome.iter().map(|&g| g as u64).sum();
     let midpoint = 128 * genome_len;
-    let balance_diff = if total > midpoint { total - midpoint } else { midpoint - total };
+    let balance_diff = total.abs_diff(midpoint);
     let max_balance_diff = 128 * genome_len;
     let balance_bonus = if max_balance_diff > 0 {
         (500 * (max_balance_diff - balance_diff)) / max_balance_diff
@@ -115,7 +117,10 @@ pub fn handle_run_round(ctx: Context<RunRound>) -> Result<()> {
     let arena = &mut ctx.accounts.arena;
     let clock = Clock::get()?;
 
-    let new_round_number = arena.current_round.checked_add(1).ok_or(SaeaError::ArithmeticOverflow)?;
+    let new_round_number = arena
+        .current_round
+        .checked_add(1)
+        .ok_or(SaeaError::ArithmeticOverflow)?;
 
     // Generate deterministic round seed
     let round_seed = hashv(&[
@@ -123,7 +128,8 @@ pub fn handle_run_round(ctx: Context<RunRound>) -> Result<()> {
         &new_round_number.to_le_bytes(),
         &arena.current_generation.to_le_bytes(),
         &clock.unix_timestamp.to_le_bytes(),
-    ]).to_bytes();
+    ])
+    .to_bytes();
 
     let round = &mut ctx.accounts.round;
     round.arena = arena.key();
@@ -142,7 +148,11 @@ pub fn handle_run_round(ctx: Context<RunRound>) -> Result<()> {
 
     arena.current_round = new_round_number;
 
-    msg!("Round {} started for generation {}", new_round_number, arena.current_generation);
+    msg!(
+        "Round {} started for generation {}",
+        new_round_number,
+        arena.current_generation
+    );
     Ok(())
 }
 
@@ -180,11 +190,23 @@ pub fn score_agent_handler(ctx: Context<ScoreAgent>) -> Result<()> {
 
     agent.fitness = fitness;
     agent.last_round = round.round_number;
-    agent.rounds_participated = agent.rounds_participated.checked_add(1).ok_or(SaeaError::ArithmeticOverflow)?;
-    agent.total_fitness = agent.total_fitness.checked_add(fitness).ok_or(SaeaError::ArithmeticOverflow)?;
+    agent.rounds_participated = agent
+        .rounds_participated
+        .checked_add(1)
+        .ok_or(SaeaError::ArithmeticOverflow)?;
+    agent.total_fitness = agent
+        .total_fitness
+        .checked_add(fitness)
+        .ok_or(SaeaError::ArithmeticOverflow)?;
 
-    round.participants = round.participants.checked_add(1).ok_or(SaeaError::ArithmeticOverflow)?;
-    round.total_fitness = round.total_fitness.checked_add(fitness).ok_or(SaeaError::ArithmeticOverflow)?;
+    round.participants = round
+        .participants
+        .checked_add(1)
+        .ok_or(SaeaError::ArithmeticOverflow)?;
+    round.total_fitness = round
+        .total_fitness
+        .checked_add(fitness)
+        .ok_or(SaeaError::ArithmeticOverflow)?;
 
     if fitness > round.best_fitness {
         round.best_fitness = fitness;
@@ -250,7 +272,12 @@ pub fn complete_round_handler(ctx: Context<CompleteRound>) -> Result<()> {
         average_fitness: round.average_fitness,
     });
 
-    msg!("Round {} completed: best={}, avg={}, participants={}",
-        round.round_number, round.best_fitness, round.average_fitness, round.participants);
+    msg!(
+        "Round {} completed: best={}, avg={}, participants={}",
+        round.round_number,
+        round.best_fitness,
+        round.average_fitness,
+        round.participants
+    );
     Ok(())
 }

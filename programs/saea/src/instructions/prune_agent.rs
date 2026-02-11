@@ -1,7 +1,7 @@
-use anchor_lang::prelude::*;
-use crate::state::{Arena, AgentAccount};
 use crate::errors::SaeaError;
 use crate::events::AgentPruned;
+use crate::state::{AgentAccount, Arena};
+use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
 pub struct PruneAgent<'info> {
@@ -29,7 +29,10 @@ pub fn handle_prune_agent(ctx: Context<PruneAgent>) -> Result<()> {
     let agent = &mut ctx.accounts.agent;
 
     agent.is_active = false;
-    arena.active_agents = arena.active_agents.checked_sub(1).ok_or(SaeaError::ArithmeticOverflow)?;
+    arena.active_agents = arena
+        .active_agents
+        .checked_sub(1)
+        .ok_or(SaeaError::ArithmeticOverflow)?;
 
     emit!(AgentPruned {
         agent: agent.key(),
@@ -37,6 +40,10 @@ pub fn handle_prune_agent(ctx: Context<PruneAgent>) -> Result<()> {
         generation: agent.generation,
     });
 
-    msg!("Agent pruned: fitness={}, gen={}", agent.fitness, agent.generation);
+    msg!(
+        "Agent pruned: fitness={}, gen={}",
+        agent.fitness,
+        agent.generation
+    );
     Ok(())
 }

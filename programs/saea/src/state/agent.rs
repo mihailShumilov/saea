@@ -12,11 +12,11 @@ pub struct AgentAccount {
     pub genome: Vec<u8>,
     pub fitness: u64,
     pub generation: u64,
-    pub parent: Pubkey,          // Pubkey::default() if genesis
+    pub parent: Pubkey,               // Pubkey::default() if genesis
     pub parent_genome_hash: [u8; 32], // SHA256 of parent genome for lineage
     pub mutation_count: u64,
     pub rounds_participated: u64,
-    pub total_fitness: u64,      // cumulative fitness across rounds
+    pub total_fitness: u64, // cumulative fitness across rounds
     pub is_active: bool,
     pub registered_at: i64,
     pub last_round: u64,

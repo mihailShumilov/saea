@@ -1,8 +1,8 @@
-use anchor_lang::prelude::*;
-use solana_sha256_hasher::hash;
-use crate::state::{Arena, AgentAccount, MAX_GENOME_LEN};
 use crate::errors::SaeaError;
 use crate::events::AgentRegistered;
+use crate::state::{AgentAccount, Arena, MAX_GENOME_LEN};
+use anchor_lang::prelude::*;
+use solana_sha256_hasher::hash;
 
 #[derive(Accounts)]
 pub struct RegisterAgent<'info> {
@@ -53,8 +53,14 @@ pub fn handle_register_agent(ctx: Context<RegisterAgent>, genome: Vec<u8>) -> Re
     agent.last_round = 0;
     agent.bump = ctx.bumps.agent;
 
-    arena.total_agents = arena.total_agents.checked_add(1).ok_or(SaeaError::ArithmeticOverflow)?;
-    arena.active_agents = arena.active_agents.checked_add(1).ok_or(SaeaError::ArithmeticOverflow)?;
+    arena.total_agents = arena
+        .total_agents
+        .checked_add(1)
+        .ok_or(SaeaError::ArithmeticOverflow)?;
+    arena.active_agents = arena
+        .active_agents
+        .checked_add(1)
+        .ok_or(SaeaError::ArithmeticOverflow)?;
 
     emit!(AgentRegistered {
         agent: agent.key(),
@@ -63,6 +69,10 @@ pub fn handle_register_agent(ctx: Context<RegisterAgent>, genome: Vec<u8>) -> Re
         generation: agent.generation,
     });
 
-    msg!("Agent registered: gen={}, genome_len={}", agent.generation, agent.genome.len());
+    msg!(
+        "Agent registered: gen={}, genome_len={}",
+        agent.generation,
+        agent.genome.len()
+    );
     Ok(())
 }

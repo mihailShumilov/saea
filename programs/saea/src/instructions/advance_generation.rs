@@ -1,7 +1,7 @@
-use anchor_lang::prelude::*;
-use crate::state::Arena;
 use crate::errors::SaeaError;
 use crate::events::GenerationAdvanced;
+use crate::state::Arena;
+use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
 pub struct AdvanceGeneration<'info> {
@@ -21,7 +21,9 @@ pub struct AdvanceGeneration<'info> {
 pub fn handle_advance_generation(ctx: Context<AdvanceGeneration>) -> Result<()> {
     let arena = &mut ctx.accounts.arena;
     let old_generation = arena.current_generation;
-    arena.current_generation = old_generation.checked_add(1).ok_or(SaeaError::ArithmeticOverflow)?;
+    arena.current_generation = old_generation
+        .checked_add(1)
+        .ok_or(SaeaError::ArithmeticOverflow)?;
 
     emit!(GenerationAdvanced {
         old_generation,
@@ -29,7 +31,11 @@ pub fn handle_advance_generation(ctx: Context<AdvanceGeneration>) -> Result<()> 
         active_agents: arena.active_agents,
     });
 
-    msg!("Generation advanced: {} -> {}, active_agents={}",
-        old_generation, arena.current_generation, arena.active_agents);
+    msg!(
+        "Generation advanced: {} -> {}, active_agents={}",
+        old_generation,
+        arena.current_generation,
+        arena.active_agents
+    );
     Ok(())
 }

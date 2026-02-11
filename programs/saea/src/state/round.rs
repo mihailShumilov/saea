@@ -11,7 +11,7 @@ pub struct Round {
     pub worst_fitness: u64,
     pub average_fitness: u64,
     pub total_fitness: u64,
-    pub seed: [u8; 32],         // deterministic seed for this round
+    pub seed: [u8; 32], // deterministic seed for this round
     pub started_at: i64,
     pub completed_at: i64,
     pub is_complete: bool,
